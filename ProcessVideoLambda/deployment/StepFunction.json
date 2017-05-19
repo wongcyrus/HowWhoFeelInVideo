@@ -1,0 +1,74 @@
+{
+  "Comment": "How Who feels in Video",
+  "StartAt": "Parallel Video Processing",
+  "States": {
+    "Parallel Video Processing": {
+      "Type": "Parallel",
+      "Next": "Waits for 10 seconds",
+      "Branches": [
+        {
+          "StartAt": "Extracts Images from Video",
+          "States": {
+            "Extracts Images from Video": {
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:us-east-1:641280019922:function:extractImage",
+              "Next": "Cascades Face Detection"
+            },
+            "Cascades Face Detection": {
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:us-east-1:641280019922:function:cascadingFaceDetection",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Extracts Audio from Video",
+          "States": {
+            "Extracts Audio from Video":{
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:us-east-1:641280019922:function:extractAudio",
+              "End": true
+            }
+          }
+        }
+      ]
+    },
+    "Waits for 10 seconds" : {
+      "Seconds" : 60,
+      "Type" : "Wait",
+      "Next": "Emoji Parallel",
+      "InputPath": "$.[0]",
+      "OutputPath": "$"
+    },
+    "Emoji Parallel": {
+      "Type": "Parallel",
+      "Next": "Final State",
+      "Branches": [
+        {
+          "StartAt": "Creates Emoji Video",
+          "States": {
+            "Creates Emoji Video":{
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:us-east-1:641280019922:function:createEmojiVideo",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Creates Identity and Emotion Report",
+          "States": {
+            "Creates Identity and Emotion Report":{
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:us-east-1:641280019922:function:createEmotionReport",
+              "End": true
+            }
+          }
+        }
+      ]
+    },
+    "Final State": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

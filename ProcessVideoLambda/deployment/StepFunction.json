@@ -34,7 +34,7 @@
       ]
     },
     "Waits for 10 seconds" : {
-      "Seconds" : 60,
+      "Seconds" : 10,
       "Type" : "Wait",
       "Next": "Emoji Parallel",
       "InputPath": "$.[0]",

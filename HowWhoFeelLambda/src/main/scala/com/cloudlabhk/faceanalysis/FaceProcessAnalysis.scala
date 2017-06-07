@@ -10,8 +10,8 @@ object FaceProcessAnalysis {
 
     val faceCollection = new FaceCollectionTools
 
-    val collectionId = "CDCAYear2Students"
-    val studentImageFolder = "E:\\Working\\ImageTest\\CDCAYear2"
+    val collectionId = "student"
+    val studentImageFolder = "E:\\Working\\ImageTest\\ICT"
     val classImagePath = "E:\\Working\\ImageTest\\2017_04_28_IMG_1827 - Copy.jpg"
 
 

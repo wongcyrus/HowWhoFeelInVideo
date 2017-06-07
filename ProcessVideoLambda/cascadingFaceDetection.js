@@ -13,7 +13,7 @@ exports.handler = (event, context, callback) => {
     let invokeLambda = (key) => new Promise((resolve, reject) => {
         let data = JSON.stringify({bucket: bucket, key: prefix + "/" + key});
         let params = {
-            FunctionName: 'arn:aws:lambda:us-east-1:641280019922:function:processImage', /* required */
+            FunctionName: process.env['RekognitionLambda'], /* required */
             Payload: data /* required */
         };
         lambda.invoke(params, (err, data) => {
@@ -30,7 +30,7 @@ exports.handler = (event, context, callback) => {
             context.done(null, data);
         }
     ).catch(err => {
-        console.log("involveLambdaPromises failied!");
+        console.log("involveLambdaPromises failed!");
         context.done(err);
     });
 };

@@ -23,7 +23,7 @@ class Main {
   import scala.collection.mutable
 
 
-  val collectionId = "CDCAYear2Students"
+  val collectionId = sys.env.get("collectionId")
 
   def handleRequest(input: InputStream, context: Context): Event = {
     val scalaMapper = {
@@ -32,8 +32,6 @@ class Main {
     }
     val event = scalaMapper.readValue(input, classOf[Event])
     println(event)
-
-   // AWSXRay.getGlobalRecorder.beginSegment()
 
     val sourceKey = event.key
     val sourceFileName = sourceKey.split('.')(0)
@@ -47,9 +45,7 @@ class Main {
     val imageFile = new File(classImagePath)
     s3Client.getObject(new GetObjectRequest(bucket, sourceKey), imageFile)
 
-
-    val attendanceChecker = new AudienceChecker(collectionId)
-
+    val attendanceChecker = new AudienceChecker(collectionId.get)
 
     def getAttendanceTime: Date = {
       import java.nio.file.{Files, Paths}

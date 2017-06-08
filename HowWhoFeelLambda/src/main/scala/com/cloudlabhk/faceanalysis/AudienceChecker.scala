@@ -3,7 +3,7 @@ package com.cloudlabhk.faceanalysis
 import java.awt.Color
 
 
-class AudienceChecker(collectionId: String) extends RekognitionTools {
+class AudienceChecker(collectionId: String, faceMatchThreshold: Float) extends RekognitionTools {
 
   import java.awt.Rectangle
   import java.awt.image.BufferedImage
@@ -15,7 +15,6 @@ class AudienceChecker(collectionId: String) extends RekognitionTools {
 
   import scala.collection.mutable
 
-  val threshold = 70F
   val maxFaces = 1
 
   private def searchFacesByImage(filePath: Option[String]): Option[SearchFacesByImageResult] = filePath match {
@@ -23,7 +22,7 @@ class AudienceChecker(collectionId: String) extends RekognitionTools {
       val searchFacesByImageRequest = new SearchFacesByImageRequest()
         .withCollectionId(collectionId)
         .withImage(getImage(new File(f)).get)
-        .withFaceMatchThreshold(threshold)
+        .withFaceMatchThreshold(faceMatchThreshold)
         .withMaxFaces(maxFaces)
       try
         Some(amazonRekognition.searchFacesByImage(searchFacesByImageRequest))

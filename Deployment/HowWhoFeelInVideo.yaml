@@ -1,0 +1,307 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  VideoBucketName:
+    Type: String
+    Default: howwhofeelinvideo
+    Description: Bucket will be created and process videos with suffix mp4, move or MOV.
+  PackageBucket:
+    Type: String
+    Default: howwhofeelinvideopackage
+  CollectionId:
+    Type: String
+    Default: student
+  FaceMatchThreshold:
+    Type: Number
+    Default: 70
+    Description: Face Match Threshold from 0 to 100
+Resources:
+  startFaceDetectionWorkFlow:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: startFaceDetectionWorkFlow.handler
+      Runtime: nodejs6.10
+      MemorySize: 128
+      Timeout: 30
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - AWSLambdaExecute
+        - AWSLambdaBasicExecutionRole
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - states:StartExecution
+              Resource: !Ref HowWhoFeelMachine
+      CodeUri:
+        Bucket: !Ref PackageBucket
+        Key: ProcessVideoLambda_latest.zip
+      Environment:
+        Variables:
+          stateMachineArn: !Ref HowWhoFeelMachine
+      Events:
+        Mp4Upload:
+          Type: S3
+          Properties:
+            Bucket: !Ref Bucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  -
+                    Name: suffix
+                    Value: .mp4
+        Mov1Upload:
+          Type: S3
+          Properties:
+            Bucket: !Ref Bucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  -
+                    Name: suffix
+                    Value: .mov
+        Mov2Upload:
+          Type: S3
+          Properties:
+            Bucket: !Ref Bucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  -
+                    Name: suffix
+                    Value: .MOV
+
+  Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Ref VideoBucketName
+
+  createEmojiVideo:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: createEmojiVideo.handler
+      Runtime: nodejs6.10
+      MemorySize: 1536
+      Timeout: 300
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - AWSLambdaExecute
+        - AWSLambdaBasicExecutionRole
+        - AmazonS3ReadOnlyAccess
+      CodeUri:
+        Bucket: !Ref PackageBucket
+        Key: ProcessVideoLambda_latest.zip
+
+  createEmotionReport:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: createEmotionReport.handler
+      Runtime: nodejs6.10
+      MemorySize: 128
+      Timeout: 120
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - AWSLambdaExecute
+        - AWSLambdaBasicExecutionRole
+        - AmazonS3ReadOnlyAccess
+      CodeUri:
+        Bucket: !Ref PackageBucket
+        Key: ProcessVideoLambda_latest.zip
+
+  extractImage:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: extractImage.handler
+      Runtime: nodejs6.10
+      MemorySize: 1536
+      Timeout: 300
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - AWSLambdaExecute
+        - AWSLambdaBasicExecutionRole
+        - AmazonS3ReadOnlyAccess
+      CodeUri:
+        Bucket: !Ref PackageBucket
+        Key: ProcessVideoLambda_latest.zip
+
+  extractAudio:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: extractAudio.handler
+      Runtime: nodejs6.10
+      MemorySize: 1536
+      Timeout: 300
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - AWSLambdaExecute
+        - AWSLambdaBasicExecutionRole
+        - AmazonS3ReadOnlyAccess
+      CodeUri:
+        Bucket: !Ref PackageBucket
+        Key: ProcessVideoLambda_latest.zip
+
+  cascadingFaceDetection:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: cascadingFaceDetection.handler
+      Runtime: nodejs6.10
+      MemorySize: 128
+      Timeout: 300
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - AWSLambdaExecute
+        - AWSLambdaBasicExecutionRole
+        - AmazonS3ReadOnlyAccess
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - lambda:InvokeFunction
+              Resource: !GetAtt RekognitionLambda.Arn
+      CodeUri:
+        Bucket: !Ref PackageBucket
+        Key: ProcessVideoLambda_latest.zip
+      Environment:
+        Variables:
+          RekognitionLambda: !GetAtt RekognitionLambda.Arn
+
+  RekognitionLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: com.cloudlabhk.faceanalysis.Main::handleRequest
+      Runtime: java8
+      MemorySize: 1024
+      Timeout: 60
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - AmazonRekognitionFullAccess
+        - AWSLambdaExecute
+        - AWSLambdaBasicExecutionRole
+        - AmazonS3ReadOnlyAccess
+      CodeUri:
+        Bucket: !Ref PackageBucket
+        Key: FaceAnalysis-assembly-1.0.jar
+      Environment:
+        Variables:
+          collectionId: !Ref CollectionId
+          faceMatchThreshold: !Ref FaceMatchThreshold
+
+  HowWhoFeelMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      DefinitionString: !Sub
+        |-
+          {
+            "Comment": "How Who feels in Video",
+            "StartAt": "Parallel Video Processing",
+            "States": {
+              "Parallel Video Processing": {
+                "Type": "Parallel",
+                "Next": "Waits for 10 seconds",
+                "Branches": [
+                  {
+                    "StartAt": "Extracts Images from Video",
+                    "States": {
+                      "Extracts Images from Video": {
+                        "Type": "Task",
+                        "Resource": "${extractImage.Arn}",
+                        "Next": "Cascades Face Detection"
+                      },
+                      "Cascades Face Detection": {
+                        "Type": "Task",
+                        "Resource": "${cascadingFaceDetection.Arn}",
+                        "End": true
+                      }
+                    }
+                  },
+                  {
+                    "StartAt": "Extracts Audio from Video",
+                    "States": {
+                      "Extracts Audio from Video":{
+                        "Type": "Task",
+                        "Resource": "${extractAudio.Arn}",
+                        "End": true
+                      }
+                    }
+                  }
+                ]
+              },
+              "Waits for 10 seconds" : {
+                "Seconds" : 10,
+                "Type" : "Wait",
+                "Next": "Emoji Parallel",
+                "InputPath": "$.[0]",
+                "OutputPath": "$"
+              },
+              "Emoji Parallel": {
+                "Type": "Parallel",
+                "Next": "Final State",
+                "Branches": [
+                  {
+                    "StartAt": "Creates Emoji Video",
+                    "States": {
+                      "Creates Emoji Video":{
+                        "Type": "Task",
+                        "Resource": "${createEmojiVideo.Arn}",
+                        "End": true
+                      }
+                    }
+                  },
+                  {
+                    "StartAt": "Creates Identity and Emotion Report",
+                    "States": {
+                      "Creates Identity and Emotion Report":{
+                        "Type": "Task",
+                        "Resource": "${createEmotionReport.Arn}",
+                        "End": true
+                      }
+                    }
+                  }
+                ]
+              },
+              "Final State": {
+                "Type": "Pass",
+                "End": true
+              }
+            }
+          }
+      RoleArn: !GetAtt StepFunctionRole.Arn
+
+  StepFunctionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+  RolePolicies:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "StepFunctionPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action: "lambda:InvokeFunction"
+            Resource: "*"
+      Roles:
+        -
+          Ref: "StepFunctionRole"

@@ -4,7 +4,7 @@ import com.amazonaws.xray.AWSXRay
 import com.amazonaws.xray.handlers.TracingHandler
 
 
-case class Event(bucket: String, key: String )
+case class Event(bucket: String, key: String)
 
 class Main {
 
@@ -23,7 +23,8 @@ class Main {
   import scala.collection.mutable
 
 
-  val collectionId = sys.env.get("collectionId")
+  val collectionId = sys.env.get("collectionId").get
+  val faceMatchThreshold = sys.env.get("faceMatchThreshold").get.toFloat
 
   def handleRequest(input: InputStream, context: Context): Event = {
     val scalaMapper = {
@@ -45,7 +46,7 @@ class Main {
     val imageFile = new File(classImagePath)
     s3Client.getObject(new GetObjectRequest(bucket, sourceKey), imageFile)
 
-    val attendanceChecker = new AudienceChecker(collectionId.get)
+    val attendanceChecker = new AudienceChecker(collectionId, faceMatchThreshold)
 
     def getAttendanceTime: Date = {
       import java.nio.file.{Files, Paths}

@@ -1,12 +1,20 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Parameters:
+  VideoBucketName:
+    Type: String
+    Default: howwhofeelinvideo
+    Description: Bucket will be created and process videos with suffix mp4, move or MOV.
   PackageBucket:
     Type: String
     Default: howwhofeelinvideopackage
   CollectionId:
     Type: String
     Default: student
+  FaceMatchThreshold:
+    Type: Number
+    Default: 70
+    Description: Face Match Threshold from 0 to 100
 Resources:
   startFaceDetectionWorkFlow:
     Type: AWS::Serverless::Function
@@ -20,9 +28,58 @@ Resources:
         - AWSXrayWriteOnlyAccess
         - AWSLambdaExecute
         - AWSLambdaBasicExecutionRole
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - states:StartExecution
+              Resource: !Ref HowWhoFeelMachine
       CodeUri:
         Bucket: !Ref PackageBucket
         Key: ProcessVideoLambda_latest.zip
+      Environment:
+        Variables:
+          stateMachineArn: !Ref HowWhoFeelMachine
+      Events:
+        Mp4Upload:
+          Type: S3
+          Properties:
+            Bucket: !Ref Bucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  -
+                    Name: suffix
+                    Value: .mp4
+        Mov1Upload:
+          Type: S3
+          Properties:
+            Bucket: !Ref Bucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  -
+                    Name: suffix
+                    Value: .mov
+        Mov2Upload:
+          Type: S3
+          Properties:
+            Bucket: !Ref Bucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  -
+                    Name: suffix
+                    Value: .MOV
+
+  Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Ref VideoBucketName
 
   createEmojiVideo:
     Type: AWS::Serverless::Function
@@ -138,6 +195,7 @@ Resources:
       Environment:
         Variables:
           collectionId: !Ref CollectionId
+          faceMatchThreshold: !Ref FaceMatchThreshold
 
   HowWhoFeelMachine:
     Type: AWS::StepFunctions::StateMachine

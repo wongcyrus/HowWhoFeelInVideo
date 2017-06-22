@@ -13,7 +13,7 @@ exports.handler = (event, context, callback) => {
     let invokeLambda = (key) => new Promise((resolve, reject) => {
         let data = JSON.stringify({bucket: bucket, key: prefix + "/" + key});
         let params = {
-            FunctionName: process.env['RekognitionLambda'], /* required */
+            FunctionName: process.env['ProcessImage'], /* required */
             Payload: data /* required */
         };
         lambda.invoke(params, (err, data) => {
@@ -27,11 +27,11 @@ exports.handler = (event, context, callback) => {
             let pngKey = keys.map(key => key.split(".")[0] + ".png");
             let data = {bucket: bucket, prefix: prefix, keys: pngKey};
             console.log("involveLambdaPromises complete!");
-            context.done(null, data);
+        callback(null, data);
         }
     ).catch(err => {
         console.log("involveLambdaPromises failed!");
-        context.done(err);
+        callback(err);
     });
 };
 

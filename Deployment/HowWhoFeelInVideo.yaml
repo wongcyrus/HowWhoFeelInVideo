@@ -19,6 +19,7 @@ Resources:
   startFaceDetectionWorkFlow:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: startFaceDetectionWorkFlow
       Handler: startFaceDetectionWorkFlow.handler
       Runtime: nodejs6.10
       MemorySize: 128
@@ -84,6 +85,7 @@ Resources:
   createEmojiVideo:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: createEmojiVideo
       Handler: createEmojiVideo.handler
       Runtime: nodejs6.10
       MemorySize: 1536
@@ -101,6 +103,7 @@ Resources:
   createEmotionReport:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: createEmotionReport
       Handler: createEmotionReport.handler
       Runtime: nodejs6.10
       MemorySize: 128
@@ -118,6 +121,7 @@ Resources:
   extractImage:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: extractImage
       Handler: extractImage.handler
       Runtime: nodejs6.10
       MemorySize: 1536
@@ -135,6 +139,7 @@ Resources:
   extractAudio:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: extractAudio
       Handler: extractAudio.handler
       Runtime: nodejs6.10
       MemorySize: 1536
@@ -149,10 +154,11 @@ Resources:
         Bucket: !Ref PackageBucket
         Key: ProcessVideoLambda_latest.zip
 
-  cascadingFaceDetection:
+  cascadeFaceDetection:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: cascadingFaceDetection.handler
+      FunctionName: cascadeFaceDetection
+      Handler: cascadeFaceDetection.handler
       Runtime: nodejs6.10
       MemorySize: 128
       Timeout: 300
@@ -167,17 +173,18 @@ Resources:
             - Effect: Allow
               Action:
                 - lambda:InvokeFunction
-              Resource: !GetAtt RekognitionLambda.Arn
+              Resource: !GetAtt ProcessImage.Arn
       CodeUri:
         Bucket: !Ref PackageBucket
         Key: ProcessVideoLambda_latest.zip
       Environment:
         Variables:
-          RekognitionLambda: !GetAtt RekognitionLambda.Arn
+          ProcessImage: !GetAtt ProcessImage.Arn
 
-  RekognitionLambda:
+  ProcessImage:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: ProcessImage
       Handler: com.cloudlabhk.faceanalysis.Main::handleRequest
       Runtime: java8
       MemorySize: 1024
@@ -220,7 +227,7 @@ Resources:
                       },
                       "Cascades Face Detection": {
                         "Type": "Task",
-                        "Resource": "${cascadingFaceDetection.Arn}",
+                        "Resource": "${cascadeFaceDetection.Arn}",
                         "End": true
                       }
                     }

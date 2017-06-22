@@ -82,9 +82,9 @@ ffmpeg -r 1 \
     }).then((result) => {
         console.log('finished');
         console.log(result);
-        context.done(null, event);
+        callback(null, event);
     }).fail((err) => {
         console.log(JSON.stringify(err));
-        context.done(JSON.stringify(err));
+        callback(JSON.stringify(err));
     });
 };

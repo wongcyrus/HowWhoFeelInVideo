@@ -68,10 +68,10 @@ exports.handler = (event, context, callback) => {
     }).then((result) => {
         console.log('finished');
         console.log(result);
-        context.done(null, result);
+        callback(null, result);
     }).fail((err) => {
         console.error("Error");
         console.log(err);
-        context.done(null, err);
+        callback(err);
     });
 };

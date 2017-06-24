@@ -66,15 +66,14 @@ class AudienceChecker(collectionId: String, faceMatchThreshold: Float) extends R
 
     val faceImagesAndBoundBoxAndEmotion = faceAndEmotion.map(f => {
       println(f._1)
-      if (f._1.x > 0 && f._1.y > 0
-        && classImage.getHeight - (f._1.x + f._1.width) > 0
-        && classImage.getWidth - (f._1.y + f._1.height) > 0) {
+      try {
         val croppedImage = classImage.getSubimage(f._1.x, f._1.y, f._1.width, f._1.height)
         val filePathName = tmpFolder + File.separator + f._1 + ".png"
         javax.imageio.ImageIO.write(croppedImage, "png", new java.io.File(filePathName))
         (Some(filePathName), f._1, f._2)
-      } else
-        (None, f._1, f._2)
+      } catch {
+        case e: Exception => (None, f._1, f._2)
+      }
     })
 
     //Parallel the search request.

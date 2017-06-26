@@ -45,7 +45,7 @@ Resources:
         Mp4Upload:
           Type: S3
           Properties:
-            Bucket: !Ref Bucket
+            Bucket: !Ref VideoBucket
             Events: s3:ObjectCreated:*
             Filter:
               S3Key:
@@ -56,7 +56,7 @@ Resources:
         Mov1Upload:
           Type: S3
           Properties:
-            Bucket: !Ref Bucket
+            Bucket: !Ref VideoBucket
             Events: s3:ObjectCreated:*
             Filter:
               S3Key:
@@ -67,7 +67,7 @@ Resources:
         Mov2Upload:
           Type: S3
           Properties:
-            Bucket: !Ref Bucket
+            Bucket: !Ref VideoBucket
             Events: s3:ObjectCreated:*
             Filter:
               S3Key:
@@ -76,7 +76,7 @@ Resources:
                     Name: suffix
                     Value: .MOV
 
-  Bucket:
+  VideoBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
     Properties:
